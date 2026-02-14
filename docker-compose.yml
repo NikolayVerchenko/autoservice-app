@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: autoservice-postgres
+    environment:
+      POSTGRES_DB: autoservice
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autoservice-backend
+    depends_on:
+      - postgres
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/autoservice
+      TELEGRAM_BOT_TOKEN: 8534054031:AAFF0LFq-0LinxoO8zEyj0VkqB1xu6kbgKA
+      PUBLIC_BOT_USERNAME: Avtoservice_l_bot
+      PUBLIC_APP_URL: http://localhost:3000
+      TELEGRAM_MODE: polling
+      TELEGRAM_POLL_INTERVAL_MS: 1500
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: autoservice-frontend
+    env_file:
+      - ./frontend/.env.docker
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
+

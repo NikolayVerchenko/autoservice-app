@@ -1,0 +1,5 @@
+export declare enum TelegramSessionState {
+    IDLE = "IDLE",
+    CHOOSING_COMPLAINT = "CHOOSING_COMPLAINT",
+    ENTERING_DIAGNOSIS_TEXT = "ENTERING_DIAGNOSIS_TEXT"
+}

@@ -1,0 +1,59 @@
+import { ConfigService } from '@nestjs/config';
+import { DataSource, Repository } from 'typeorm';
+import { TelegramService } from '../telegram/telegram.service';
+import { Car } from '../car/car.entity';
+import { Client } from '../client/client.entity';
+import { User } from '../user/user.entity';
+import { ComplaintLabor } from './complaint-labor.entity';
+import { ComplaintPart } from './complaint-part.entity';
+import { AddComplaintDto } from './dto/add-complaint.dto';
+import { AssignMechanicDto } from './dto/assign-mechanic.dto';
+import { CreateComplaintLaborDto } from './dto/create-complaint-labor.dto';
+import { CreateComplaintPartDto } from './dto/create-complaint-part.dto';
+import { CreateDefectDto } from './dto/create-defect.dto';
+import { FindDefectsQueryDto } from './dto/find-defects-query.dto';
+import { UpdateComplaintApprovalDto } from './dto/update-complaint-approval.dto';
+import { UpdateComplaintLaborDto } from './dto/update-complaint-labor.dto';
+import { UpdateComplaintPartDto } from './dto/update-complaint-part.dto';
+import { UpdateComplaintDto } from './dto/update-complaint.dto';
+import { DefectComplaint } from './defect-complaint.entity';
+import { Defect } from './defect.entity';
+export declare class DefectService {
+    private readonly dataSource;
+    private readonly configService;
+    private readonly telegramService;
+    private readonly defectRepository;
+    private readonly complaintRepository;
+    private readonly complaintLaborRepository;
+    private readonly complaintPartRepository;
+    private readonly clientRepository;
+    private readonly carRepository;
+    private readonly userRepository;
+    private readonly botToken;
+    constructor(dataSource: DataSource, configService: ConfigService, telegramService: TelegramService, defectRepository: Repository<Defect>, complaintRepository: Repository<DefectComplaint>, complaintLaborRepository: Repository<ComplaintLabor>, complaintPartRepository: Repository<ComplaintPart>, clientRepository: Repository<Client>, carRepository: Repository<Car>, userRepository: Repository<User>);
+    create(dto: CreateDefectDto): Promise<any>;
+    findAll(query: FindDefectsQueryDto): Promise<any[]>;
+    findOne(id: string): Promise<any>;
+    sendDefectToClient(defectId: string): Promise<{
+        ok: true;
+    }>;
+    addComplaint(defectId: string, dto: AddComplaintDto): Promise<DefectComplaint>;
+    updateComplaint(id: string, dto: UpdateComplaintDto): Promise<DefectComplaint>;
+    updateComplaintApproval(id: string, dto: UpdateComplaintApprovalDto): Promise<DefectComplaint>;
+    addLabor(complaintId: string, dto: CreateComplaintLaborDto): Promise<ComplaintLabor>;
+    updateLabor(id: string, dto: UpdateComplaintLaborDto): Promise<ComplaintLabor>;
+    deleteLabor(id: string): Promise<{
+        deleted: true;
+    }>;
+    addPart(complaintId: string, dto: CreateComplaintPartDto): Promise<ComplaintPart>;
+    updatePart(id: string, dto: UpdateComplaintPartDto): Promise<ComplaintPart>;
+    deletePart(id: string): Promise<{
+        deleted: true;
+    }>;
+    assignMechanic(defectId: string, dto: AssignMechanicDto): Promise<any>;
+    private getComplaintOrThrow;
+    private attachTotals;
+    private formatDefectNumber;
+    private notifyMechanic;
+    private sendTelegramMessage;
+}
