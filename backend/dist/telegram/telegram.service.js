@@ -47,6 +47,10 @@ let TelegramService = TelegramService_1 = class TelegramService {
     }
     async onModuleInit() {
         const mode = (this.configService.get('TELEGRAM_MODE') ?? 'webhook').toLowerCase();
+        if (mode === 'off') {
+            this.logger.log('Telegram mode is off; bot startup skipped');
+            return;
+        }
         if (mode !== 'polling' || !this.botToken || this.botToken === 'PUT_YOUR_TOKEN_HERE') {
             return;
         }

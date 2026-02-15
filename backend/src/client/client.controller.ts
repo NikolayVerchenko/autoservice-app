@@ -1,15 +1,15 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { Client } from './client.entity';
 import { ClientService } from './client.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Controller('clients')
 export class ClientController {
   constructor(
     private readonly clientService: ClientService,
-    private readonly configService: ConfigService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   @Post()
@@ -46,7 +46,7 @@ export class ClientController {
 
     return {
       tgInviteToken: client.tgInviteToken,
-      tgLink: this.buildTelegramLink(client.tgInviteToken),
+      tgLink: await this.buildTelegramLink(client.tgInviteToken),
     };
   }
 
@@ -59,12 +59,12 @@ export class ClientController {
 
     return {
       tgInviteToken: client.tgInviteToken,
-      tgLink: this.buildTelegramLink(client.tgInviteToken),
+      tgLink: await this.buildTelegramLink(client.tgInviteToken),
     };
   }
 
-  private buildTelegramLink(token: string | null): string {
-    const username = this.configService.get<string>('PUBLIC_BOT_USERNAME') ?? '';
+  private async buildTelegramLink(token: string | null): Promise<string> {
+    const username = await this.settingsService.getPublicBotUsername();
     const safeToken = token ?? '';
 
     return `https://t.me/${username}?start=link_${safeToken}`;

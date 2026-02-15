@@ -19,6 +19,7 @@ const defect_module_1 = require("./defect/defect.module");
 const order_module_1 = require("./order/order.module");
 const telegram_module_1 = require("./telegram/telegram.module");
 const user_module_1 = require("./user/user.module");
+const settings_module_1 = require("./settings/settings.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -45,6 +46,7 @@ exports.AppModule = AppModule = __decorate([
             order_module_1.OrderModule,
             appointment_module_1.AppointmentModule,
             telegram_module_1.TelegramModule,
+            settings_module_1.SettingsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

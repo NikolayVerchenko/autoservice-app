@@ -5,6 +5,7 @@ const navItems = [
   { to: '/defects', label: 'Дефектовки' },
   { to: '/clients', label: 'Клиенты' },
   { to: '/cars', label: 'Автомобили' },
+  { to: '/settings', label: 'Настройки' },
 ];
 
 export function AppLayout() {

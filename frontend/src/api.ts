@@ -110,6 +110,13 @@ export type ClientTelegramLink = {
   tgLink: string;
 };
 
+export type SystemSettings = {
+  id: number;
+  publicBotUsername: string | null;
+  publicAppUrl: string | null;
+  updatedAt: string;
+};
+
 type CreateAppointmentPayload = {
   clientId: string;
   carId: string;
@@ -228,6 +235,17 @@ export const api = {
   refreshClientTelegramToken(clientId: string) {
     return request<ClientTelegramLink>(`/clients/${clientId}/tg-refresh-token`, {
       method: 'POST',
+    });
+  },
+
+  getSettings() {
+    return request<SystemSettings>('/settings');
+  },
+
+  updateSettings(payload: { publicBotUsername?: string; publicAppUrl?: string }) {
+    return request<SystemSettings>('/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     });
   },
 

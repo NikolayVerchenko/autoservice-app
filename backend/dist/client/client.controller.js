@@ -14,16 +14,16 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientController = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
 const create_client_dto_1 = require("./dto/create-client.dto");
 const update_client_dto_1 = require("./dto/update-client.dto");
 const client_service_1 = require("./client.service");
+const settings_service_1 = require("../settings/settings.service");
 let ClientController = class ClientController {
     clientService;
-    configService;
-    constructor(clientService, configService) {
+    settingsService;
+    constructor(clientService, settingsService) {
         this.clientService = clientService;
-        this.configService = configService;
+        this.settingsService = settingsService;
     }
     create(createClientDto) {
         return this.clientService.create(createClientDto);
@@ -44,18 +44,18 @@ let ClientController = class ClientController {
         const client = await this.clientService.refreshInviteToken(id);
         return {
             tgInviteToken: client.tgInviteToken,
-            tgLink: this.buildTelegramLink(client.tgInviteToken),
+            tgLink: await this.buildTelegramLink(client.tgInviteToken),
         };
     }
     async getTelegramLink(id) {
         const client = await this.clientService.findOne(id);
         return {
             tgInviteToken: client.tgInviteToken,
-            tgLink: this.buildTelegramLink(client.tgInviteToken),
+            tgLink: await this.buildTelegramLink(client.tgInviteToken),
         };
     }
-    buildTelegramLink(token) {
-        const username = this.configService.get('PUBLIC_BOT_USERNAME') ?? '';
+    async buildTelegramLink(token) {
+        const username = await this.settingsService.getPublicBotUsername();
         const safeToken = token ?? '';
         return `https://t.me/${username}?start=link_${safeToken}`;
     }
@@ -113,6 +113,6 @@ __decorate([
 exports.ClientController = ClientController = __decorate([
     (0, common_1.Controller)('clients'),
     __metadata("design:paramtypes", [client_service_1.ClientService,
-        config_1.ConfigService])
+        settings_service_1.SettingsService])
 ], ClientController);
 //# sourceMappingURL=client.controller.js.map

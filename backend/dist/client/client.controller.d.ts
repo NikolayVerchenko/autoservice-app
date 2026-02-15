@@ -1,12 +1,12 @@
-import { ConfigService } from '@nestjs/config';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { Client } from './client.entity';
 import { ClientService } from './client.service';
+import { SettingsService } from '../settings/settings.service';
 export declare class ClientController {
     private readonly clientService;
-    private readonly configService;
-    constructor(clientService: ClientService, configService: ConfigService);
+    private readonly settingsService;
+    constructor(clientService: ClientService, settingsService: SettingsService);
     create(createClientDto: CreateClientDto): Promise<Client>;
     findAll(): Promise<Client[]>;
     findOne(id: string): Promise<Client>;

@@ -10,6 +10,7 @@ import { DefectModule } from './defect/defect.module';
 import { OrderModule } from './order/order.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { UserModule } from './user/user.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UserModule } from './user/user.module';
     OrderModule,
     AppointmentModule,
     TelegramModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
