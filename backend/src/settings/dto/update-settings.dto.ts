@@ -8,4 +8,8 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   publicAppUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  telegramBotToken?: string;
 }

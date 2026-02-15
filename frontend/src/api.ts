@@ -114,6 +114,7 @@ export type SystemSettings = {
   id: number;
   publicBotUsername: string | null;
   publicAppUrl: string | null;
+  telegramBotToken: string | null;
   updatedAt: string;
 };
 
@@ -242,7 +243,7 @@ export const api = {
     return request<SystemSettings>('/settings');
   },
 
-  updateSettings(payload: { publicBotUsername?: string; publicAppUrl?: string }) {
+  updateSettings(payload: { publicBotUsername?: string; publicAppUrl?: string; telegramBotToken?: string }) {
     return request<SystemSettings>('/settings', {
       method: 'PATCH',
       body: JSON.stringify(payload),

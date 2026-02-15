@@ -6,13 +6,14 @@ import { ClientService } from '../client/client.service';
 import { DefectComplaint } from '../defect/defect-complaint.entity';
 import { DefectStatus, DiagnosticStatus } from '../defect/defect.enums';
 import { Defect } from '../defect/defect.entity';
+import { SettingsService } from '../settings/settings.service';
 import { UserService } from '../user/user.service';
 import { TelegramSession } from './telegram-session.entity';
 import { TelegramSessionState } from './telegram-session.enums';
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
-  private readonly botToken: string;
+  private botToken = '';
   private readonly logger = new Logger(TelegramService.name);
   private isPolling = false;
   private pollingOffset = 0;
@@ -20,6 +21,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly clientService: ClientService,
     private readonly userService: UserService,
+    private readonly settingsService: SettingsService,
     private readonly configService: ConfigService,
     @InjectRepository(TelegramSession)
     private readonly sessionRepository: Repository<TelegramSession>,
@@ -27,12 +29,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly defectRepository: Repository<Defect>,
     @InjectRepository(DefectComplaint)
     private readonly complaintRepository: Repository<DefectComplaint>,
-  ) {
-    this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN') ?? '';
-  }
+  ) {}
 
   async onModuleInit(): Promise<void> {
     const mode = (this.configService.get<string>('TELEGRAM_MODE') ?? 'webhook').toLowerCase();
+    this.botToken = await this.settingsService.getTelegramBotToken();
 
     if (mode === 'off') {
       this.logger.log('Telegram mode is off; bot startup skipped');

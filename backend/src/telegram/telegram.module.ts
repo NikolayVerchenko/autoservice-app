@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientModule } from '../client/client.module';
 import { DefectComplaint } from '../defect/defect-complaint.entity';
 import { Defect } from '../defect/defect.entity';
+import { SettingsModule } from '../settings/settings.module';
 import { UserModule } from '../user/user.module';
 import { TelegramController } from './telegram.controller';
 import { TelegramSession } from './telegram-session.entity';
@@ -12,6 +13,7 @@ import { TelegramService } from './telegram.service';
   imports: [
     ClientModule,
     UserModule,
+    SettingsModule,
     TypeOrmModule.forFeature([TelegramSession, Defect, DefectComplaint]),
   ],
   controllers: [TelegramController],

@@ -11,6 +11,9 @@ export class Settings {
   @Column({ type: 'varchar', nullable: true })
   publicAppUrl: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  telegramBotToken: string | null;
+
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }

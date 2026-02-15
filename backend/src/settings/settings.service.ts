@@ -22,6 +22,7 @@ export class SettingsService {
         id: this.singletonId,
         publicBotUsername: this.configService.get<string>('PUBLIC_BOT_USERNAME') ?? null,
         publicAppUrl: this.configService.get<string>('PUBLIC_APP_URL') ?? null,
+        telegramBotToken: this.configService.get<string>('TELEGRAM_BOT_TOKEN') ?? null,
       });
       settings = await this.settingsRepository.save(settings);
     }
@@ -39,11 +40,20 @@ export class SettingsService {
       settings.publicAppUrl = dto.publicAppUrl.trim() || null;
     }
 
+    if (typeof dto.telegramBotToken === 'string') {
+      settings.telegramBotToken = dto.telegramBotToken.trim() || null;
+    }
+
     return this.settingsRepository.save(settings);
   }
 
   async getPublicBotUsername(): Promise<string> {
     const settings = await this.get();
     return settings.publicBotUsername || this.configService.get<string>('PUBLIC_BOT_USERNAME') || '';
+  }
+
+  async getTelegramBotToken(): Promise<string> {
+    const settings = await this.get();
+    return settings.telegramBotToken || this.configService.get<string>('TELEGRAM_BOT_TOKEN') || '';
   }
 }

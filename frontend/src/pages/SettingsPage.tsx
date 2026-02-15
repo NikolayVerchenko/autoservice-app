@@ -5,6 +5,7 @@ import { api } from '../api';
 export function SettingsPage() {
   const [publicBotUsername, setPublicBotUsername] = useState('');
   const [publicAppUrl, setPublicAppUrl] = useState('');
+  const [telegramBotToken, setTelegramBotToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +17,7 @@ export function SettingsPage() {
       const data = await api.getSettings();
       setPublicBotUsername(data.publicBotUsername ?? '');
       setPublicAppUrl(data.publicAppUrl ?? '');
+      setTelegramBotToken(data.telegramBotToken ?? '');
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -34,6 +36,7 @@ export function SettingsPage() {
       await api.updateSettings({
         publicBotUsername: publicBotUsername.trim(),
         publicAppUrl: publicAppUrl.trim(),
+        telegramBotToken: telegramBotToken.trim(),
       });
       alert('Настройки сохранены');
     } catch (e) {
@@ -73,9 +76,15 @@ export function SettingsPage() {
             placeholder="https://lr-service-181.ru"
           />
         </label>
-        <div className="text-xs text-slate-500">
-          Токен Telegram-бота хранится в переменных окружения и не редактируется из UI.
-        </div>
+        <label className="block text-sm">
+          <div className="mb-1 text-slate-700">Токен Telegram-бота</div>
+          <input
+            className="w-full rounded border px-3 py-2"
+            value={telegramBotToken}
+            onChange={(e) => setTelegramBotToken(e.target.value)}
+            placeholder="123456789:AA..."
+          />
+        </label>
         <button type="submit" className="rounded bg-slate-900 px-3 py-2 text-white" disabled={saving}>
           Сохранить
         </button>
