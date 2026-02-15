@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
+import { Appointment } from '../appointment/appointment.entity';
 import { Car } from '../car/car.entity';
+import { Defect } from '../defect/defect.entity';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { Client } from './client.entity';
@@ -14,6 +16,10 @@ export class ClientService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(Car)
     private readonly carRepository: Repository<Car>,
+    @InjectRepository(Defect)
+    private readonly defectRepository: Repository<Defect>,
+    @InjectRepository(Appointment)
+    private readonly appointmentRepository: Repository<Appointment>,
   ) {}
 
   async create(createClientDto: CreateClientDto): Promise<Client> {
@@ -112,6 +118,18 @@ export class ClientService {
 
   async remove(id: string): Promise<{ deleted: true }> {
     const client = await this.findOne(id);
+
+    const [defectsCount, appointmentsCount] = await Promise.all([
+      this.defectRepository.count({ where: { clientId: client.id } }),
+      this.appointmentRepository.count({ where: { clientId: client.id } }),
+    ]);
+
+    if (defectsCount > 0 || appointmentsCount > 0) {
+      throw new ConflictException(
+        'Нельзя удалить клиента: есть связанные дефектовки или записи. Сначала удалите их.',
+      );
+    }
+
     await this.clientRepository.remove(client);
     return { deleted: true };
   }

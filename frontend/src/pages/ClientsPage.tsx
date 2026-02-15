@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import type { Car, Client } from '../api';
 
 export function ClientsPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,16 +25,8 @@ export function ClientsPage() {
   const [createTelegramLink, setCreateTelegramLink] = useState<string | null>(null);
   const [editTelegramLink, setEditTelegramLink] = useState<string | null>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
-
-  const [createCars, setCreateCars] = useState<Car[]>([]);
-  const [editCars, setEditCars] = useState<Car[]>([]);
-  const [createPrimaryCarId, setCreatePrimaryCarId] = useState('');
-  const [editPrimaryCarId, setEditPrimaryCarId] = useState('');
-
-  const [createCarBrand, setCreateCarBrand] = useState('');
-  const [createCarModel, setCreateCarModel] = useState('');
-  const [editCarBrand, setEditCarBrand] = useState('');
-  const [editCarModel, setEditCarModel] = useState('');
+  const [selectedCreatedCar, setSelectedCreatedCar] = useState<Car | null>(null);
+  const [selectedEditCar, setSelectedEditCar] = useState<Car | null>(null);
 
   async function loadClients() {
     setLoading(true);
@@ -46,22 +41,49 @@ export function ClientsPage() {
     }
   }
 
-  async function loadClientCars(clientId: string, mode: 'create' | 'edit') {
-    try {
-      const cars = await api.listCars({ clientId });
-      if (mode === 'create') {
-        setCreateCars(cars);
-      } else {
-        setEditCars(cars);
-      }
-    } catch (e) {
-      alert((e as Error).message);
-    }
-  }
-
   useEffect(() => {
     void loadClients();
   }, []);
+
+  useEffect(() => {
+    const createClientId = searchParams.get('createClientId');
+    const editClientId = searchParams.get('editClientId');
+    const selectedCarId = searchParams.get('selectedCarId');
+    if (!createClientId && !editClientId) return;
+    const clientId = createClientId ?? editClientId ?? '';
+    const modalMode: 'create' | 'edit' = createClientId ? 'create' : 'edit';
+
+    async function restoreCreateContext() {
+      try {
+        const client = await api.getClient(clientId);
+        if (modalMode === 'create') {
+          setCreatedClient(client);
+          setIsCreateOpen(true);
+          setCreateName(client.name);
+          setCreatePhone(client.phone);
+        } else {
+          setSelectedClient(client);
+          setIsEditOpen(true);
+          setEditName(client.name);
+          setEditPhone(client.phone);
+        }
+
+        if (selectedCarId) {
+          const cars = await api.listCars({ clientId: client.id });
+          const selected = cars.find((car) => car.id === selectedCarId) ?? null;
+          if (modalMode === 'create') {
+            setSelectedCreatedCar(selected);
+          } else {
+            setSelectedEditCar(selected);
+          }
+        }
+      } catch (e) {
+        alert((e as Error).message);
+      }
+    }
+
+    void restoreCreateContext();
+  }, [searchParams]);
 
   async function onCreateClient(e: FormEvent) {
     e.preventDefault();
@@ -74,8 +96,7 @@ export function ClientsPage() {
       setCreateName('');
       setCreatePhone('');
       setCreateTelegramLink(null);
-      setCreatePrimaryCarId(created.primaryCarId ?? '');
-      await loadClientCars(created.id, 'create');
+      setSelectedCreatedCar(null);
       await loadClients();
     } catch (e) {
       alert((e as Error).message);
@@ -84,13 +105,10 @@ export function ClientsPage() {
 
   function openEditModal(client: Client) {
     setSelectedClient(client);
+    setSelectedEditCar(client.primaryCar ?? null);
     setEditName(client.name);
     setEditPhone(client.phone);
     setEditTelegramLink(null);
-    setEditPrimaryCarId(client.primaryCarId ?? '');
-    setEditCarBrand('');
-    setEditCarModel('');
-    void loadClientCars(client.id, 'edit');
     setIsEditOpen(true);
   }
 
@@ -102,7 +120,6 @@ export function ClientsPage() {
       await api.updateClient(selectedClient.id, {
         name: editName.trim(),
         phone: editPhone.trim(),
-        primaryCarId: editPrimaryCarId || undefined,
       });
       setIsEditOpen(false);
       setSelectedClient(null);
@@ -188,43 +205,17 @@ export function ClientsPage() {
     }
   }
 
-  async function createCarForCreatedClient() {
-    if (!createdClient) return;
-    if (!createCarBrand.trim() || !createCarModel.trim()) {
-      alert('Введите марку и модель');
-      return;
-    }
+  async function unlinkPrimaryCar(clientId: string, mode: 'create' | 'edit') {
     try {
-      const car = await api.createCar({
-        clientId: createdClient.id,
-        brand: createCarBrand.trim(),
-        model: createCarModel.trim(),
-      });
-      setCreateCarBrand('');
-      setCreateCarModel('');
-      await loadClientCars(createdClient.id, 'create');
-      setCreatePrimaryCarId(car.id);
-    } catch (e) {
-      alert((e as Error).message);
-    }
-  }
-
-  async function createCarForEditClient() {
-    if (!selectedClient) return;
-    if (!editCarBrand.trim() || !editCarModel.trim()) {
-      alert('Введите марку и модель');
-      return;
-    }
-    try {
-      const car = await api.createCar({
-        clientId: selectedClient.id,
-        brand: editCarBrand.trim(),
-        model: editCarModel.trim(),
-      });
-      setEditCarBrand('');
-      setEditCarModel('');
-      await loadClientCars(selectedClient.id, 'edit');
-      setEditPrimaryCarId(car.id);
+      await api.updateClient(clientId, { primaryCarId: null });
+      await loadClients();
+      if (mode === 'create') {
+        setSelectedCreatedCar(null);
+      } else {
+        setSelectedEditCar(null);
+        setSelectedClient((prev) => (prev ? { ...prev, primaryCar: null, primaryCarId: null } : prev));
+      }
+      alert('Автомобиль отвязан');
     } catch (e) {
       alert((e as Error).message);
     }
@@ -238,7 +229,15 @@ export function ClientsPage() {
           <button className="rounded border px-3 py-2" onClick={() => void loadClients()}>
             Обновить
           </button>
-          <button className="rounded bg-slate-900 px-3 py-2 text-white" onClick={() => setIsCreateOpen(true)}>
+          <button
+            className="rounded bg-slate-900 px-3 py-2 text-white"
+            onClick={() => {
+              navigate('/clients');
+              setCreatedClient(null);
+              setSelectedCreatedCar(null);
+              setIsCreateOpen(true);
+            }}
+          >
             Добавить клиента
           </button>
         </div>
@@ -293,30 +292,36 @@ export function ClientsPage() {
             <input className="w-full rounded border px-3 py-2" placeholder="Имя" value={createName} onChange={(e) => setCreateName(e.target.value)} required />
             <input className="w-full rounded border px-3 py-2" placeholder="Телефон" value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} required />
 
-            <div className="rounded border bg-slate-50 p-3 space-y-2">
-              <div className="text-sm font-medium">Автомобиль клиента</div>
-              {!createdClient ? (
-                <div className="text-xs text-slate-600">Сначала сохраните клиента, затем выберите или создайте автомобиль.</div>
-              ) : (
-                <>
-                  <select className="w-full rounded border px-3 py-2" value={createPrimaryCarId} onChange={(e) => setCreatePrimaryCarId(e.target.value)}>
-                    <option value="">Не выбран</option>
-                    {createCars.map((car) => (
-                      <option key={car.id} value={car.id}>
-                        {car.brand} {car.model} {car.plate ? `(${car.plate})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <input className="rounded border px-3 py-2" placeholder="Марка нового авто" value={createCarBrand} onChange={(e) => setCreateCarBrand(e.target.value)} />
-                    <input className="rounded border px-3 py-2" placeholder="Модель нового авто" value={createCarModel} onChange={(e) => setCreateCarModel(e.target.value)} />
+            {!createdClient ? null : (
+              <div className="rounded border bg-slate-50 p-3 space-y-2">
+                <div className="text-sm font-medium">Автомобиль клиента</div>
+                <div className="text-xs text-slate-600">
+                  Для выбора или добавления автомобиля перейдите на страницу автомобилей.
+                </div>
+                <button
+                  type="button"
+                  className="rounded border px-3 py-1"
+                  onClick={() =>
+                    navigate(`/cars?clientId=${createdClient.id}&returnTo=clients&returnModal=create`)
+                  }
+                >
+                  Сменить авто
+                </button>
+                <button
+                  type="button"
+                  className="rounded border border-red-300 px-3 py-1 text-red-700"
+                  onClick={() => void unlinkPrimaryCar(createdClient.id, 'create')}
+                >
+                  Отвязать авто
+                </button>
+                {selectedCreatedCar ? (
+                  <div className="text-xs text-emerald-700">
+                    Выбранный автомобиль: {selectedCreatedCar.brand} {selectedCreatedCar.model}
+                    {selectedCreatedCar.plate ? ` (${selectedCreatedCar.plate})` : ''}
                   </div>
-                  <button type="button" className="rounded border px-3 py-1" onClick={() => void createCarForCreatedClient()}>
-                    Создать автомобиль
-                  </button>
-                </>
-              )}
-            </div>
+                ) : null}
+              </div>
+            )}
 
             <div className="rounded border bg-slate-50 p-3 space-y-2">
               <div className="text-sm font-medium">Telegram привязка</div>
@@ -340,23 +345,6 @@ export function ClientsPage() {
             </div>
 
             <div className="flex justify-end gap-2">
-              {createdClient ? (
-                <button
-                  type="button"
-                  className="rounded border px-3 py-2"
-                  onClick={async () => {
-                    try {
-                      await api.updateClient(createdClient.id, { primaryCarId: createPrimaryCarId || undefined });
-                      await loadClients();
-                      alert('Автомобиль клиента сохранен');
-                    } catch (e) {
-                      alert((e as Error).message);
-                    }
-                  }}
-                >
-                  Сохранить автомобиль
-                </button>
-              ) : null}
               <button
                 type="button"
                 className="rounded border px-3 py-2"
@@ -366,10 +354,7 @@ export function ClientsPage() {
                   setCreateName('');
                   setCreatePhone('');
                   setCreateTelegramLink(null);
-                  setCreateCars([]);
-                  setCreatePrimaryCarId('');
-                  setCreateCarBrand('');
-                  setCreateCarModel('');
+                  setSelectedCreatedCar(null);
                 }}
               >
                 Отмена
@@ -389,24 +374,36 @@ export function ClientsPage() {
             <input className="w-full rounded border px-3 py-2" placeholder="Имя" value={editName} onChange={(e) => setEditName(e.target.value)} required />
             <input className="w-full rounded border px-3 py-2" placeholder="Телефон" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} required />
 
-            <div className="rounded border bg-slate-50 p-3 space-y-2">
-              <div className="text-sm font-medium">Автомобиль клиента</div>
-              <select className="w-full rounded border px-3 py-2" value={editPrimaryCarId} onChange={(e) => setEditPrimaryCarId(e.target.value)}>
-                <option value="">Не выбран</option>
-                {editCars.map((car) => (
-                  <option key={car.id} value={car.id}>
-                    {car.brand} {car.model} {car.plate ? `(${car.plate})` : ''}
-                  </option>
-                ))}
-              </select>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input className="rounded border px-3 py-2" placeholder="Марка нового авто" value={editCarBrand} onChange={(e) => setEditCarBrand(e.target.value)} />
-                <input className="rounded border px-3 py-2" placeholder="Модель нового авто" value={editCarModel} onChange={(e) => setEditCarModel(e.target.value)} />
+            {selectedClient ? (
+              <div className="rounded border bg-slate-50 p-3 space-y-2">
+                <div className="text-sm font-medium">Автомобиль клиента</div>
+                <div className="text-xs text-slate-600">
+                  Для выбора или добавления автомобиля перейдите на страницу автомобилей.
+                </div>
+                <button
+                  type="button"
+                  className="rounded border px-3 py-1"
+                  onClick={() =>
+                    navigate(`/cars?clientId=${selectedClient.id}&returnTo=clients&returnModal=edit`)
+                  }
+                >
+                  Сменить авто
+                </button>
+                <button
+                  type="button"
+                  className="rounded border border-red-300 px-3 py-1 text-red-700"
+                  onClick={() => void unlinkPrimaryCar(selectedClient.id, 'edit')}
+                >
+                  Отвязать авто
+                </button>
+                {selectedEditCar ? (
+                  <div className="text-xs text-emerald-700">
+                    Выбранный автомобиль: {selectedEditCar.brand} {selectedEditCar.model}
+                    {selectedEditCar.plate ? ` (${selectedEditCar.plate})` : ''}
+                  </div>
+                ) : null}
               </div>
-              <button type="button" className="rounded border px-3 py-1" onClick={() => void createCarForEditClient()}>
-                Создать автомобиль
-              </button>
-            </div>
+            ) : null}
 
             {selectedClient ? (
               <div className="rounded border bg-slate-50 p-3 space-y-2">
@@ -439,7 +436,7 @@ export function ClientsPage() {
                 onClick={() => {
                   setIsEditOpen(false);
                   setEditTelegramLink(null);
-                  setEditCars([]);
+                  setSelectedEditCar(null);
                 }}
               >
                 Отмена

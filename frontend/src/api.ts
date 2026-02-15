@@ -110,6 +110,17 @@ export type ClientTelegramLink = {
   tgLink: string;
 };
 
+export type VehicleBrand = {
+  id: string;
+  name: string;
+};
+
+export type VehicleModel = {
+  id: string;
+  brandId: string;
+  name: string;
+};
+
 export type SystemSettings = {
   id: number;
   publicBotUsername: string | null;
@@ -161,6 +172,10 @@ export const api = {
     return request<Client[]>('/clients');
   },
 
+  getClient(clientId: string) {
+    return request<Client>(`/clients/${clientId}`);
+  },
+
   createClient(payload: { name: string; phone: string; telegramUserId?: string; primaryCarId?: string }) {
     return request<Client>('/clients', {
       method: 'POST',
@@ -168,7 +183,7 @@ export const api = {
     });
   },
 
-  updateClient(clientId: string, payload: { name?: string; phone?: string; telegramUserId?: string; primaryCarId?: string }) {
+  updateClient(clientId: string, payload: { name?: string; phone?: string; telegramUserId?: string; primaryCarId?: string | null }) {
     return request<Client>(`/clients/${clientId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -188,6 +203,18 @@ export const api = {
     }
 
     return request<Car[]>(query.size > 0 ? `/cars?${query.toString()}` : '/cars');
+  },
+
+  listVehicleBrands() {
+    return request<VehicleBrand[]>('/vehicle-brands');
+  },
+
+  listVehicleModels(params?: { brandId?: string }) {
+    const query = new URLSearchParams();
+    if (params?.brandId) {
+      query.set('brandId', params.brandId);
+    }
+    return request<VehicleModel[]>(query.size > 0 ? `/vehicle-models?${query.toString()}` : '/vehicle-models');
   },
 
   createCar(payload: {

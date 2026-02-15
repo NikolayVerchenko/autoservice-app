@@ -11,6 +11,7 @@ import { OrderModule } from './order/order.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { UserModule } from './user/user.module';
 import { SettingsModule } from './settings/settings.module';
+import { VehicleCatalogModule } from './vehicle-catalog/vehicle-catalog.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SettingsModule } from './settings/settings.module';
     AppointmentModule,
     TelegramModule,
     SettingsModule,
+    VehicleCatalogModule,
   ],
   controllers: [AppController],
   providers: [AppService],
