@@ -26,8 +26,6 @@ services:
       PUBLIC_APP_URL: http://localhost:3000
       TELEGRAM_MODE: polling
       TELEGRAM_POLL_INTERVAL_MS: 1500
-    ports:
-      - "3000:3000"
 
   frontend:
     build:
