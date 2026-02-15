@@ -8,6 +8,8 @@ export declare class Client {
     tgInviteToken: string | null;
     tgLinkedAt: Date | null;
     cars: Car[];
+    primaryCarId: string | null;
+    primaryCar: Car | null;
     defects: Defect[];
     createdAt: Date;
     updatedAt: Date;

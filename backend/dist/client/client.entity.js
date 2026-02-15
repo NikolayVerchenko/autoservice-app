@@ -21,6 +21,8 @@ let Client = class Client {
     tgInviteToken;
     tgLinkedAt;
     cars;
+    primaryCarId;
+    primaryCar;
     defects;
     createdAt;
     updatedAt;
@@ -54,6 +56,15 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => car_entity_1.Car, (car) => car.client),
     __metadata("design:type", Array)
 ], Client.prototype, "cars", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    __metadata("design:type", Object)
+], Client.prototype, "primaryCarId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => car_entity_1.Car, { nullable: true, onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'primaryCarId' }),
+    __metadata("design:type", Object)
+], Client.prototype, "primaryCar", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => defect_entity_1.Defect, (defect) => defect.client),
     __metadata("design:type", Array)

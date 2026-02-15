@@ -34,6 +34,7 @@ export declare class DefectService {
     create(dto: CreateDefectDto): Promise<any>;
     findAll(query: FindDefectsQueryDto): Promise<any[]>;
     findOne(id: string): Promise<any>;
+    getPublicDefectHtml(defectId: string, token?: string): Promise<string>;
     sendDefectToClient(defectId: string): Promise<{
         ok: true;
     }>;
@@ -51,8 +52,11 @@ export declare class DefectService {
         deleted: true;
     }>;
     assignMechanic(defectId: string, dto: AssignMechanicDto): Promise<any>;
+    private getDefectWithDetailsOrThrow;
     private getComplaintOrThrow;
     private attachTotals;
+    private renderPublicDefectHtml;
+    private escapeHtml;
     private formatDefectNumber;
     private notifyMechanic;
     private sendTelegramMessage;

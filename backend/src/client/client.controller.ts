@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 import { Client } from './client.entity';
 import { ClientService } from './client.service';
 
@@ -24,6 +25,16 @@ export class ClientController {
   @Get(':id')
   findOne(@Param('id') id: string): Promise<Client> {
     return this.clientService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto): Promise<Client> {
+    return this.clientService.update(id, updateClientDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string): Promise<{ deleted: true }> {
+    return this.clientService.remove(id);
   }
 
   @Post(':id/tg-refresh-token')

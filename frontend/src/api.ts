@@ -79,6 +79,37 @@ export type Order = {
   number: string;
 };
 
+export type Client = {
+  id: string;
+  name: string;
+  phone: string;
+  telegramUserId: string | null;
+  tgInviteToken: string | null;
+  tgLinkedAt: string | null;
+  primaryCarId: string | null;
+  primaryCar?: Car | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Car = {
+  id: string;
+  clientId: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  vin: string | null;
+  plate: string | null;
+  mileage: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ClientTelegramLink = {
+  tgInviteToken: string | null;
+  tgLink: string;
+};
+
 type CreateAppointmentPayload = {
   clientId: string;
   carId: string;
@@ -118,6 +149,88 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  listClients() {
+    return request<Client[]>('/clients');
+  },
+
+  createClient(payload: { name: string; phone: string; telegramUserId?: string; primaryCarId?: string }) {
+    return request<Client>('/clients', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateClient(clientId: string, payload: { name?: string; phone?: string; telegramUserId?: string; primaryCarId?: string }) {
+    return request<Client>(`/clients/${clientId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteClient(clientId: string) {
+    return request<{ deleted: true }>(`/clients/${clientId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  listCars(params?: { clientId?: string }) {
+    const query = new URLSearchParams();
+    if (params?.clientId) {
+      query.set('clientId', params.clientId);
+    }
+
+    return request<Car[]>(query.size > 0 ? `/cars?${query.toString()}` : '/cars');
+  },
+
+  createCar(payload: {
+    clientId: string;
+    brand: string;
+    model: string;
+    year?: number;
+    vin?: string;
+    plate?: string;
+    mileage?: number;
+  }) {
+    return request<Car>('/cars', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateCar(
+    carId: string,
+    payload: {
+      clientId?: string;
+      brand?: string;
+      model?: string;
+      year?: number;
+      vin?: string;
+      plate?: string;
+      mileage?: number;
+    },
+  ) {
+    return request<Car>(`/cars/${carId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteCar(carId: string) {
+    return request<{ deleted: true }>(`/cars/${carId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getClientTelegramLink(clientId: string) {
+    return request<ClientTelegramLink>(`/clients/${clientId}/tg-link`);
+  },
+
+  refreshClientTelegramToken(clientId: string) {
+    return request<ClientTelegramLink>(`/clients/${clientId}/tg-refresh-token`, {
+      method: 'POST',
+    });
+  },
+
   listAppointments(params: { from: string; to: string }) {
     const query = new URLSearchParams(params);
     return request<Appointment[]>(`/appointments?${query.toString()}`);

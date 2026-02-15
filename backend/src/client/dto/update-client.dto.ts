@@ -1,13 +1,15 @@
 import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
-export class CreateClientDto {
+export class UpdateClientDto {
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  phone: string;
+  phone?: string;
 
   @IsOptional()
   @IsString()

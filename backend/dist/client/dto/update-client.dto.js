@@ -9,34 +9,36 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateClientDto = void 0;
+exports.UpdateClientDto = void 0;
 const class_validator_1 = require("class-validator");
-class CreateClientDto {
+class UpdateClientDto {
     name;
     phone;
     telegramUserId;
     primaryCarId;
 }
-exports.CreateClientDto = CreateClientDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], CreateClientDto.prototype, "name", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], CreateClientDto.prototype, "phone", void 0);
+exports.UpdateClientDto = UpdateClientDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
-], CreateClientDto.prototype, "telegramUserId", void 0);
+], UpdateClientDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], UpdateClientDto.prototype, "phone", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], UpdateClientDto.prototype, "telegramUserId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
-], CreateClientDto.prototype, "primaryCarId", void 0);
-//# sourceMappingURL=create-client.dto.js.map
+], UpdateClientDto.prototype, "primaryCarId", void 0);
+//# sourceMappingURL=update-client.dto.js.map

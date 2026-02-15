@@ -16,6 +16,7 @@ exports.ClientController = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const create_client_dto_1 = require("./dto/create-client.dto");
+const update_client_dto_1 = require("./dto/update-client.dto");
 const client_service_1 = require("./client.service");
 let ClientController = class ClientController {
     clientService;
@@ -32,6 +33,12 @@ let ClientController = class ClientController {
     }
     findOne(id) {
         return this.clientService.findOne(id);
+    }
+    update(id, updateClientDto) {
+        return this.clientService.update(id, updateClientDto);
+    }
+    remove(id) {
+        return this.clientService.remove(id);
     }
     async refreshTelegramToken(id) {
         const client = await this.clientService.refreshInviteToken(id);
@@ -74,6 +81,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ClientController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_client_dto_1.UpdateClientDto]),
+    __metadata("design:returntype", Promise)
+], ClientController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ClientController.prototype, "remove", null);
 __decorate([
     (0, common_1.Post)(':id/tg-refresh-token'),
     __param(0, (0, common_1.Param)('id')),

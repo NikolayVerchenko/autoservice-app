@@ -25,6 +25,11 @@ export declare class DefectController {
         ok: true;
     }>;
 }
+export declare class PublicDefectController {
+    private readonly defectService;
+    constructor(defectService: DefectService);
+    getPublicHtml(id: string, token?: string): Promise<string>;
+}
 export declare class ComplaintController {
     private readonly defectService;
     constructor(defectService: DefectService);

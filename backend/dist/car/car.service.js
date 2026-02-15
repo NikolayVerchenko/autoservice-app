@@ -43,6 +43,37 @@ let CarService = class CarService {
         }
         return car;
     }
+    async update(id, dto) {
+        const car = await this.findOne(id);
+        if (typeof dto.clientId === 'string') {
+            await this.clientService.findOne(dto.clientId);
+            car.clientId = dto.clientId;
+        }
+        if (typeof dto.brand === 'string') {
+            car.brand = dto.brand;
+        }
+        if (typeof dto.model === 'string') {
+            car.model = dto.model;
+        }
+        if (typeof dto.year === 'number') {
+            car.year = dto.year;
+        }
+        if (typeof dto.vin === 'string') {
+            car.vin = dto.vin.trim() || null;
+        }
+        if (typeof dto.plate === 'string') {
+            car.plate = dto.plate.trim() || null;
+        }
+        if (typeof dto.mileage === 'number') {
+            car.mileage = dto.mileage;
+        }
+        return this.carRepository.save(car);
+    }
+    async remove(id) {
+        const car = await this.findOne(id);
+        await this.carRepository.remove(car);
+        return { deleted: true };
+    }
 };
 exports.CarService = CarService;
 exports.CarService = CarService = __decorate([

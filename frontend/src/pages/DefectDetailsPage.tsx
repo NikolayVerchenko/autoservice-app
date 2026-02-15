@@ -199,7 +199,7 @@ export function DefectDetailsPage() {
         <div>
           <h2 className="text-xl font-semibold">{defect?.number ?? 'Дефектовка'}</h2>
           <div className="text-sm text-slate-600 mt-1">
-            Status: {defect?.status ?? '-'} | Клиент: {defect?.client?.name ?? defect?.clientId ?? '-'} | Авто:{' '}
+            Статус: {defect?.status ?? '-'} | Клиент: {defect?.client?.name ?? defect?.clientId ?? '-'} | Авто:{' '}
             {defect?.car ? `${defect.car.brand} ${defect.car.model}` : defect?.carId ?? '-'}
           </div>
           <div className="text-sm text-slate-600 mt-1">
@@ -241,23 +241,23 @@ export function DefectDetailsPage() {
         </aside>
 
         <section className="flex-1 rounded border bg-white p-4 space-y-5">
-          {loading ? <div>Loading...</div> : !selectedComplaint ? <div>Выберите жалобу</div> : (
+          {loading ? <div>Загрузка...</div> : !selectedComplaint ? <div>Выберите жалобу</div> : (
             <>
               <div>
-                <div className="mb-1 text-sm font-semibold">ComplaintText</div>
+                <div className="mb-1 text-sm font-semibold">Текст жалобы</div>
                 <textarea className="w-full rounded border px-3 py-2" rows={3} value={complaintDraft} onChange={(e) => setComplaintDraft(e.target.value)} />
                 <button className="mt-2 rounded border px-3 py-2" onClick={() => void saveComplaintText()}>Сохранить</button>
               </div>
 
               <div>
-                <div className="mb-1 text-sm font-semibold">DiagnosticText</div>
+                <div className="mb-1 text-sm font-semibold">Диагностика</div>
                 <div className="rounded border bg-slate-50 p-3 text-sm">{selectedComplaint.diagnosticText || 'Ожидает ответа механика'}</div>
               </div>
 
               <div>
                 <div className="mb-2 text-sm font-semibold">Работы</div>
                 <table className="w-full text-sm border rounded overflow-hidden">
-                  <thead className="bg-slate-50"><tr><th className="px-2 py-1 text-left">name</th><th className="px-2 py-1 text-left">qty</th><th className="px-2 py-1 text-left">priceRub</th><th className="px-2 py-1 text-left"></th></tr></thead>
+                  <thead className="bg-slate-50"><tr><th className="px-2 py-1 text-left">Наименование</th><th className="px-2 py-1 text-left">Кол-во</th><th className="px-2 py-1 text-left">Цена, руб</th><th className="px-2 py-1 text-left"></th></tr></thead>
                   <tbody>
                     {(selectedComplaint.labors ?? []).map((l) => (
                       <tr className="border-t" key={l.id}>
@@ -268,7 +268,7 @@ export function DefectDetailsPage() {
                   </tbody>
                 </table>
                 <form className="mt-2 grid grid-cols-4 gap-2" onSubmit={addLabor}>
-                  <input className="rounded border px-2 py-1" placeholder="name" value={newLaborName} onChange={(e) => setNewLaborName(e.target.value)} required />
+                  <input className="rounded border px-2 py-1" placeholder="Наименование" value={newLaborName} onChange={(e) => setNewLaborName(e.target.value)} required />
                   <input className="rounded border px-2 py-1" type="number" min={1} value={newLaborQty} onChange={(e) => setNewLaborQty(Number(e.target.value))} required />
                   <input className="rounded border px-2 py-1" type="number" min={0} value={newLaborPrice} onChange={(e) => setNewLaborPrice(Number(e.target.value))} required />
                   <button className="rounded border px-3 py-1">Добавить</button>
@@ -278,7 +278,7 @@ export function DefectDetailsPage() {
               <div>
                 <div className="mb-2 text-sm font-semibold">Запчасти</div>
                 <table className="w-full text-sm border rounded overflow-hidden">
-                  <thead className="bg-slate-50"><tr><th className="px-2 py-1 text-left">name</th><th className="px-2 py-1 text-left">qty</th><th className="px-2 py-1 text-left">priceRub</th><th className="px-2 py-1 text-left">fromStock</th><th className="px-2 py-1 text-left"></th></tr></thead>
+                  <thead className="bg-slate-50"><tr><th className="px-2 py-1 text-left">Наименование</th><th className="px-2 py-1 text-left">Кол-во</th><th className="px-2 py-1 text-left">Цена, руб</th><th className="px-2 py-1 text-left">Со склада</th><th className="px-2 py-1 text-left"></th></tr></thead>
                   <tbody>
                     {(selectedComplaint.parts ?? []).map((p) => (
                       <tr className="border-t" key={p.id}>
@@ -289,10 +289,10 @@ export function DefectDetailsPage() {
                   </tbody>
                 </table>
                 <form className="mt-2 grid grid-cols-5 gap-2" onSubmit={addPart}>
-                  <input className="rounded border px-2 py-1" placeholder="name" value={newPartName} onChange={(e) => setNewPartName(e.target.value)} required />
+                  <input className="rounded border px-2 py-1" placeholder="Наименование" value={newPartName} onChange={(e) => setNewPartName(e.target.value)} required />
                   <input className="rounded border px-2 py-1" type="number" min={1} value={newPartQty} onChange={(e) => setNewPartQty(Number(e.target.value))} required />
                   <input className="rounded border px-2 py-1" type="number" min={0} value={newPartPrice} onChange={(e) => setNewPartPrice(Number(e.target.value))} required />
-                  <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={newPartFromStock} onChange={(e) => setNewPartFromStock(e.target.checked)} />stock</label>
+                  <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={newPartFromStock} onChange={(e) => setNewPartFromStock(e.target.checked)} />да</label>
                   <button className="rounded border px-3 py-1">Добавить</button>
                 </form>
               </div>

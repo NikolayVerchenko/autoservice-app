@@ -1,16 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
 const navItems = [
-  { to: '/appointments', label: 'Appointments' },
-  { to: '/defects', label: 'Defects' },
-  { to: '/clients', label: 'Clients' },
+  { to: '/appointments', label: 'Записи' },
+  { to: '/defects', label: 'Дефектовки' },
+  { to: '/clients', label: 'Клиенты' },
+  { to: '/cars', label: 'Автомобили' },
 ];
 
 export function AppLayout() {
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="h-14 border-b border-slate-200 bg-white px-6 flex items-center">
-        <h1 className="text-lg font-semibold">Autoservice Dashboard</h1>
+        <h1 className="text-lg font-semibold">Панель автосервиса</h1>
       </header>
       <div className="flex">
         <aside className="w-56 border-r border-slate-200 bg-white min-h-[calc(100vh-56px)] p-4">

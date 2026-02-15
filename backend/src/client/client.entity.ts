@@ -4,6 +4,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -31,6 +33,13 @@ export class Client {
 
   @OneToMany(() => Car, (car) => car.client)
   cars: Car[];
+
+  @Column({ type: 'uuid', nullable: true })
+  primaryCarId: string | null;
+
+  @ManyToOne(() => Car, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'primaryCarId' })
+  primaryCar: Car | null;
 
   @OneToMany(() => Defect, (defect) => defect.client)
   defects: Defect[];

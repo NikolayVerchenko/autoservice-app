@@ -38,7 +38,7 @@ exports.DefectModule = DefectModule = __decorate([
                 user_entity_1.User,
             ]),
         ],
-        controllers: [defect_controller_1.DefectController, defect_controller_1.ComplaintController, defect_controller_1.ComplaintLaborController, defect_controller_1.ComplaintPartController],
+        controllers: [defect_controller_1.DefectController, defect_controller_1.PublicDefectController, defect_controller_1.ComplaintController, defect_controller_1.ComplaintLaborController, defect_controller_1.ComplaintPartController],
         providers: [defect_service_1.DefectService],
         exports: [defect_service_1.DefectService, typeorm_1.TypeOrmModule],
     })

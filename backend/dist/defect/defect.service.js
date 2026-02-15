@@ -99,14 +99,19 @@ let DefectService = class DefectService {
         });
     }
     async findOne(id) {
-        const defect = await this.defectRepository.findOne({
-            where: { id },
-            relations: { complaints: { labors: true, parts: true }, client: true, car: true },
-            order: { complaints: { idx: 'ASC' } },
-        });
-        if (!defect)
-            throw new common_1.NotFoundException(`Defect with id ${id} not found`);
+        const defect = await this.getDefectWithDetailsOrThrow(id);
         return this.attachTotals(defect);
+    }
+    async getPublicDefectHtml(defectId, token) {
+        const defect = await this.getDefectWithDetailsOrThrow(defectId);
+        if (!defect.publicShareToken) {
+            throw new common_1.NotFoundException();
+        }
+        if (!token || token !== defect.publicShareToken) {
+            throw new common_1.ForbiddenException();
+        }
+        const view = this.attachTotals(defect);
+        return this.renderPublicDefectHtml(view);
     }
     async sendDefectToClient(defectId) {
         const defect = await this.findOne(defectId);
@@ -125,7 +130,7 @@ let DefectService = class DefectService {
             `Жалобы: ${defect.complaints?.length ?? 0}`,
             `Итого: ${defect.totals?.totalRub ?? 0} руб.`,
             '',
-            `Открой: ${publicUrl}/defects/${defect.id}?token=${defect.publicShareToken}`,
+            `Открой: ${publicUrl}/public/defects/${defect.id}?token=${defect.publicShareToken}`,
             'PDF: (пока пропустить, позже добавим)',
         ].join('\n');
         await this.telegramService.sendMessage(defect.client.telegramUserId, text);
@@ -214,6 +219,17 @@ let DefectService = class DefectService {
         await this.notifyMechanic(mechanic, refreshed);
         return refreshed;
     }
+    async getDefectWithDetailsOrThrow(id) {
+        const defect = await this.defectRepository.findOne({
+            where: { id },
+            relations: { complaints: { labors: true, parts: true }, client: true, car: true },
+            order: { complaints: { idx: 'ASC' } },
+        });
+        if (!defect) {
+            throw new common_1.NotFoundException(`Defect with id ${id} not found`);
+        }
+        return defect;
+    }
     async getComplaintOrThrow(id) {
         const complaint = await this.complaintRepository.findOne({ where: { id } });
         if (!complaint)
@@ -229,6 +245,116 @@ let DefectService = class DefectService {
         const laborTotalRub = complaints.reduce((sum, c) => sum + c.laborTotalRub, 0);
         const partsTotalRub = complaints.reduce((sum, c) => sum + c.partsTotalRub, 0);
         return { ...defect, complaints, totals: { laborTotalRub, partsTotalRub, totalRub: laborTotalRub + partsTotalRub } };
+    }
+    renderPublicDefectHtml(defect) {
+        const createdAt = new Date().toLocaleString('ru-RU');
+        const car = defect.car ?? {};
+        const client = defect.client ?? {};
+        const rows = (defect.complaints ?? [])
+            .map((complaint) => {
+            const labors = (complaint.labors ?? []).length
+                ? `<ul>${complaint.labors
+                    .map((labor) => `<li>${this.escapeHtml(labor.name)}: ${labor.qty} x ${labor.priceRub} = ${labor.qty * labor.priceRub} руб.</li>`)
+                    .join('')}</ul>`
+                : '<span class="muted">-</span>';
+            const parts = (complaint.parts ?? []).length
+                ? `<ul>${complaint.parts
+                    .map((part) => `<li>${this.escapeHtml(part.name)}: ${part.qty} x ${part.priceRub} = ${part.qty * part.priceRub} руб.</li>`)
+                    .join('')}</ul>`
+                : '<span class="muted">-</span>';
+            const approvalLabel = complaint.approvalStatus === 'ORDER'
+                ? 'В ЗН'
+                : complaint.approvalStatus === 'RECOMMENDATION'
+                    ? 'Рекомендации'
+                    : 'На согласовании';
+            return `
+          <tr>
+            <td>${complaint.idx}</td>
+            <td>${this.escapeHtml(complaint.complaintText)}</td>
+            <td>${complaint.diagnosticText ? this.escapeHtml(complaint.diagnosticText) : '<span class="muted">Ожидает ответа механика</span>'}</td>
+            <td>${labors}</td>
+            <td>${parts}</td>
+            <td>${complaint.totalRub} руб.</td>
+            <td>${approvalLabel}</td>
+          </tr>
+        `;
+        })
+            .join('');
+        return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Дефектовка ${this.escapeHtml(defect.number)}</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; color: #111; }
+    .page { width: 800px; margin: 0 auto; }
+    h1 { margin: 0 0 16px; font-size: 28px; }
+    .meta { margin-bottom: 16px; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid #bbb; padding: 8px; vertical-align: top; text-align: left; }
+    th { background: #f5f5f5; }
+    ul { margin: 0; padding-left: 18px; }
+    .totals { margin-top: 16px; font-size: 16px; }
+    .muted { color: #666; }
+    .actions { margin: 16px 0; }
+    button { padding: 10px 14px; font-size: 14px; cursor: pointer; }
+    @media print {
+      body { padding: 0; }
+      .page { width: auto; margin: 0; }
+      .actions { display: none; }
+      th, td { border-color: #888; }
+      @page { size: A4; margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="actions"><button onclick="window.print()">Печать</button></div>
+    <h1>Дефектовка ${this.escapeHtml(defect.number)}</h1>
+    <div class="meta">
+      <div><strong>Клиент:</strong> ${this.escapeHtml(client.name ?? '-')} (${this.escapeHtml(client.phone ?? '-')})</div>
+      <div><strong>Авто:</strong> ${this.escapeHtml(car.brand ?? '-')} ${this.escapeHtml(car.model ?? '-')} ${car.year ?? ''} ${this.escapeHtml(car.plate ?? '')}</div>
+      <div><strong>VIN:</strong> ${this.escapeHtml(car.vin ?? '-')}</div>
+      <div><strong>Пробег:</strong> ${car.mileage ?? '-'} км</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Жалоба</th>
+          <th>Диагностика</th>
+          <th>Работы</th>
+          <th>Запчасти</th>
+          <th>Итого по жалобе</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows || '<tr><td colspan="7">Нет жалоб</td></tr>'}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div><strong>Итоги по дефектовке:</strong></div>
+      <div>Работы: ${defect.totals?.laborTotalRub ?? 0} руб.</div>
+      <div>Запчасти: ${defect.totals?.partsTotalRub ?? 0} руб.</div>
+      <div><strong>Итого: ${defect.totals?.totalRub ?? 0} руб.</strong></div>
+    </div>
+
+    <div class="meta muted">Дата формирования: ${createdAt}</div>
+  </div>
+</body>
+</html>`;
+    }
+    escapeHtml(value) {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
     formatDefectNumber(year, value) {
         return `ДФ-${year}-${String(value).padStart(6, '0')}`;

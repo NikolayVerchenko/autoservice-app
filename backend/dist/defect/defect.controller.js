@@ -12,7 +12,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ComplaintPartController = exports.ComplaintLaborController = exports.ComplaintController = exports.DefectController = void 0;
+exports.ComplaintPartController = exports.ComplaintLaborController = exports.ComplaintController = exports.PublicDefectController = exports.DefectController = void 0;
 const common_1 = require("@nestjs/common");
 const defect_service_1 = require("./defect.service");
 const add_complaint_dto_1 = require("./dto/add-complaint.dto");
@@ -98,6 +98,29 @@ exports.DefectController = DefectController = __decorate([
     (0, common_1.Controller)('defects'),
     __metadata("design:paramtypes", [defect_service_1.DefectService])
 ], DefectController);
+let PublicDefectController = class PublicDefectController {
+    defectService;
+    constructor(defectService) {
+        this.defectService = defectService;
+    }
+    getPublicHtml(id, token) {
+        return this.defectService.getPublicDefectHtml(id, token);
+    }
+};
+exports.PublicDefectController = PublicDefectController;
+__decorate([
+    (0, common_1.Get)(':id'),
+    (0, common_1.Header)('Content-Type', 'text/html; charset=utf-8'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], PublicDefectController.prototype, "getPublicHtml", null);
+exports.PublicDefectController = PublicDefectController = __decorate([
+    (0, common_1.Controller)('public/defects'),
+    __metadata("design:paramtypes", [defect_service_1.DefectService])
+], PublicDefectController);
 let ComplaintController = class ComplaintController {
     defectService;
     constructor(defectService) {

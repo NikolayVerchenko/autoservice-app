@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
+import { Car } from '../car/car.entity';
 import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 import { Client } from './client.entity';
 
 @Injectable()
@@ -10,19 +12,36 @@ export class ClientService {
   constructor(
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
+    @InjectRepository(Car)
+    private readonly carRepository: Repository<Car>,
   ) {}
 
-  create(createClientDto: CreateClientDto): Promise<Client> {
+  async create(createClientDto: CreateClientDto): Promise<Client> {
+    const telegramUserId = createClientDto.telegramUserId?.trim() || null;
     const client = this.clientRepository.create({
-      ...createClientDto,
+      name: createClientDto.name,
+      phone: createClientDto.phone,
+      telegramUserId,
+      tgLinkedAt: telegramUserId ? new Date() : null,
       tgInviteToken: randomUUID(),
+      primaryCarId: null,
     });
+    const saved = await this.clientRepository.save(client);
 
-    return this.clientRepository.save(client);
+    if (createClientDto.primaryCarId) {
+      const car = await this.carRepository.findOne({ where: { id: createClientDto.primaryCarId } });
+      if (car && car.clientId === saved.id) {
+        saved.primaryCarId = car.id;
+        return this.clientRepository.save(saved);
+      }
+    }
+
+    return saved;
   }
 
   findAll(): Promise<Client[]> {
     return this.clientRepository.find({
+      relations: { primaryCar: true },
       order: { createdAt: 'DESC' },
     });
   }
@@ -53,5 +72,47 @@ export class ClientService {
     client.tgInviteToken = randomUUID();
 
     return this.clientRepository.save(client);
+  }
+
+  findOneByTelegramUserId(telegramUserId: string): Promise<Client | null> {
+    return this.clientRepository.findOne({ where: { telegramUserId } });
+  }
+
+  async update(id: string, dto: UpdateClientDto): Promise<Client> {
+    const client = await this.findOne(id);
+
+    if (typeof dto.name === 'string') {
+      client.name = dto.name;
+    }
+
+    if (typeof dto.phone === 'string') {
+      client.phone = dto.phone;
+    }
+
+    if (typeof dto.telegramUserId === 'string') {
+      const telegramUserId = dto.telegramUserId.trim();
+      client.telegramUserId = telegramUserId || null;
+      client.tgLinkedAt = telegramUserId ? new Date() : null;
+    }
+
+    if ('primaryCarId' in dto) {
+      if (!dto.primaryCarId) {
+        client.primaryCarId = null;
+      } else {
+        const car = await this.carRepository.findOne({ where: { id: dto.primaryCarId } });
+        if (!car || car.clientId !== client.id) {
+          throw new NotFoundException('Car not found for this client');
+        }
+        client.primaryCarId = car.id;
+      }
+    }
+
+    return this.clientRepository.save(client);
+  }
+
+  async remove(id: string): Promise<{ deleted: true }> {
+    const client = await this.findOne(id);
+    await this.clientRepository.remove(client);
+    return { deleted: true };
   }
 }

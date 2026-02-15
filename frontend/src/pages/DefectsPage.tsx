@@ -44,18 +44,18 @@ export function DefectsPage() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left">
             <tr>
-              <th className="px-3 py-2">Number</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Client</th>
-              <th className="px-3 py-2">Car</th>
-              <th className="px-3 py-2">Mechanic</th>
-              <th className="px-3 py-2">Total</th>
-              <th className="px-3 py-2">Created</th>
+              <th className="px-3 py-2">Номер</th>
+              <th className="px-3 py-2">Статус</th>
+              <th className="px-3 py-2">Клиент</th>
+              <th className="px-3 py-2">Авто</th>
+              <th className="px-3 py-2">Механик</th>
+              <th className="px-3 py-2">Сумма</th>
+              <th className="px-3 py-2">Создано</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className="px-3 py-3" colSpan={7}>Loading...</td></tr>
+              <tr><td className="px-3 py-3" colSpan={7}>Загрузка...</td></tr>
             ) : rows.length === 0 ? (
               <tr><td className="px-3 py-3" colSpan={7}>Нет дефектовок</td></tr>
             ) : (

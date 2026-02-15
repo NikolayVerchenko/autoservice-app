@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var TelegramService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TelegramService = void 0;
 const common_1 = require("@nestjs/common");
@@ -24,7 +25,7 @@ const defect_entity_1 = require("../defect/defect.entity");
 const user_service_1 = require("../user/user.service");
 const telegram_session_entity_1 = require("./telegram-session.entity");
 const telegram_session_enums_1 = require("./telegram-session.enums");
-let TelegramService = class TelegramService {
+let TelegramService = TelegramService_1 = class TelegramService {
     clientService;
     userService;
     configService;
@@ -32,6 +33,9 @@ let TelegramService = class TelegramService {
     defectRepository;
     complaintRepository;
     botToken;
+    logger = new common_1.Logger(TelegramService_1.name);
+    isPolling = false;
+    pollingOffset = 0;
     constructor(clientService, userService, configService, sessionRepository, defectRepository, complaintRepository) {
         this.clientService = clientService;
         this.userService = userService;
@@ -40,6 +44,19 @@ let TelegramService = class TelegramService {
         this.defectRepository = defectRepository;
         this.complaintRepository = complaintRepository;
         this.botToken = this.configService.get('TELEGRAM_BOT_TOKEN') ?? '';
+    }
+    async onModuleInit() {
+        const mode = (this.configService.get('TELEGRAM_MODE') ?? 'webhook').toLowerCase();
+        if (mode !== 'polling' || !this.botToken || this.botToken === 'PUT_YOUR_TOKEN_HERE') {
+            return;
+        }
+        this.isPolling = true;
+        await this.initPollingOffset();
+        this.logger.log('Telegram polling started');
+        void this.runPollingLoop();
+    }
+    onModuleDestroy() {
+        this.isPolling = false;
     }
     async handleUpdate(update) {
         if (update?.callback_query) {
@@ -61,16 +78,31 @@ let TelegramService = class TelegramService {
             await this.handleClientLink(chatId, fromId, linkMatch[1]);
             return;
         }
-        const mechanic = await this.userService.findMechanicByTelegramUserId(String(fromId));
-        if (!mechanic) {
-            await this.sendMessage(chatId, 'Вы не зарегистрированы как механик');
+        const roleCtx = await this.getRoleContext(String(fromId));
+        if (text === '/start' || text === '/menu') {
+            await this.sendRoleMenu(chatId, roleCtx.isMechanic, roleCtx.isClient);
             return;
         }
-        const session = await this.getOrCreateSession(mechanic.id);
-        if (session.state === telegram_session_enums_1.TelegramSessionState.ENTERING_DIAGNOSIS_TEXT && session.activeComplaintId) {
-            await this.handleDiagnosisTextInput(chatId, mechanic.id, session, text);
+        if (!roleCtx.isMechanic && !roleCtx.isClient) {
+            await this.sendMessage(chatId, 'Вы не зарегистрированы в системе');
             return;
         }
+        if (roleCtx.mechanic) {
+            const session = await this.getOrCreateSession(roleCtx.mechanic.id);
+            if (session.state === telegram_session_enums_1.TelegramSessionState.ENTERING_DIAGNOSIS_TEXT && session.activeComplaintId) {
+                await this.handleDiagnosisTextInput(chatId, roleCtx.mechanic.id, session, text);
+                return;
+            }
+        }
+        if (roleCtx.isMechanic && roleCtx.isClient) {
+            await this.sendMessage(chatId, 'Выберите режим работы через /menu');
+            return;
+        }
+        if (roleCtx.isMechanic) {
+            await this.sendMessage(chatId, 'Режим механика активен. Используйте кнопки в карточке дефектовки.');
+            return;
+        }
+        await this.sendMessage(chatId, 'Режим клиента активен. Ожидайте сообщения по вашим документам.');
     }
     async sendMessage(chatId, text, replyMarkup) {
         if (!this.botToken || this.botToken === 'PUT_YOUR_TOKEN_HERE') {
@@ -89,6 +121,53 @@ let TelegramService = class TelegramService {
             throw new Error(`Telegram API sendMessage failed with status ${response.status}`);
         }
     }
+    async initPollingOffset() {
+        try {
+            const updates = await this.fetchUpdates(0, 1);
+            if (updates.length > 0) {
+                const last = updates[updates.length - 1];
+                this.pollingOffset = Number(last.update_id) + 1;
+            }
+        }
+        catch (error) {
+            this.logger.error('Telegram polling init failed', error instanceof Error ? error.stack : String(error));
+        }
+    }
+    async runPollingLoop() {
+        const interval = Number(this.configService.get('TELEGRAM_POLL_INTERVAL_MS') ?? '1500');
+        while (this.isPolling) {
+            try {
+                const updates = await this.fetchUpdates(this.pollingOffset, 30);
+                for (const update of updates) {
+                    await this.handleUpdate(update);
+                    this.pollingOffset = Number(update.update_id) + 1;
+                }
+            }
+            catch (error) {
+                this.logger.error('Telegram polling error', error instanceof Error ? error.stack : String(error));
+            }
+            if (!this.isPolling) {
+                break;
+            }
+            await new Promise((resolve) => setTimeout(resolve, interval));
+        }
+    }
+    async fetchUpdates(offset, timeoutSec) {
+        const params = new URLSearchParams();
+        if (offset > 0) {
+            params.set('offset', String(offset));
+        }
+        params.set('timeout', String(timeoutSec));
+        const response = await fetch(`https://api.telegram.org/bot${this.botToken}/getUpdates?${params.toString()}`);
+        if (!response.ok) {
+            throw new Error(`Telegram getUpdates failed with status ${response.status}`);
+        }
+        const payload = (await response.json());
+        if (!payload.ok) {
+            throw new Error('Telegram getUpdates returned ok=false');
+        }
+        return payload.result ?? [];
+    }
     async handleClientLink(chatId, fromId, token) {
         const client = await this.clientService.findOneByInviteToken(token);
         if (!client) {
@@ -106,10 +185,16 @@ let TelegramService = class TelegramService {
         if (!data || !fromId || !chatId) {
             return;
         }
-        const mechanic = await this.userService.findMechanicByTelegramUserId(String(fromId));
+        const roleCtx = await this.getRoleContext(String(fromId));
+        if (data.startsWith('role:')) {
+            await this.answerCallbackQuery(callbackId);
+            await this.handleRoleSelection(chatId, data, roleCtx.isMechanic, roleCtx.isClient);
+            return;
+        }
+        const mechanic = roleCtx.mechanic;
         if (!mechanic) {
-            await this.answerCallbackQuery(callbackId, 'Вы не зарегистрированы как механик');
-            await this.sendMessage(chatId, 'Вы не зарегистрированы как механик');
+            await this.answerCallbackQuery(callbackId, 'Доступно только в режиме механика');
+            await this.sendMessage(chatId, 'Это действие доступно только механику.');
             return;
         }
         await this.answerCallbackQuery(callbackId);
@@ -258,9 +343,61 @@ let TelegramService = class TelegramService {
             body: JSON.stringify({ callback_query_id: callbackQueryId, ...(text ? { text } : {}) }),
         });
     }
+    async getRoleContext(telegramUserId) {
+        const mechanic = await this.userService.findMechanicByTelegramUserId(telegramUserId);
+        const client = await this.clientService.findOneByTelegramUserId(telegramUserId);
+        return {
+            isMechanic: Boolean(mechanic),
+            isClient: Boolean(client),
+            mechanic,
+        };
+    }
+    async sendRoleMenu(chatId, isMechanic, isClient) {
+        if (!isMechanic && !isClient) {
+            await this.sendMessage(chatId, 'Вы не зарегистрированы в системе');
+            return;
+        }
+        if (isMechanic && isClient) {
+            await this.sendMessage(chatId, 'У вас доступны два режима:', {
+                inline_keyboard: [
+                    [{ text: 'Режим механика', callback_data: 'role:mechanic' }],
+                    [{ text: 'Режим клиента', callback_data: 'role:client' }],
+                ],
+            });
+            return;
+        }
+        if (isMechanic) {
+            await this.sendMessage(chatId, 'Доступен режим механика.', {
+                inline_keyboard: [[{ text: 'Открыть режим механика', callback_data: 'role:mechanic' }]],
+            });
+            return;
+        }
+        await this.sendMessage(chatId, 'Доступен режим клиента.', {
+            inline_keyboard: [[{ text: 'Открыть режим клиента', callback_data: 'role:client' }]],
+        });
+    }
+    async handleRoleSelection(chatId, data, isMechanic, isClient) {
+        if (data === 'role:mechanic') {
+            if (!isMechanic) {
+                await this.sendMessage(chatId, 'Роль механика для этого аккаунта недоступна.');
+                return;
+            }
+            await this.sendMessage(chatId, 'Режим механика активен. Для работы используйте карточки дефектовок с кнопкой "Ответить в Telegram".');
+            return;
+        }
+        if (data === 'role:client') {
+            if (!isClient) {
+                await this.sendMessage(chatId, 'Роль клиента для этого аккаунта недоступна.');
+                return;
+            }
+            await this.sendMessage(chatId, 'Режим клиента активен. Здесь вы будете получать сообщения от автосервиса.');
+            return;
+        }
+        await this.sendMessage(chatId, 'Неизвестный режим.');
+    }
 };
 exports.TelegramService = TelegramService;
-exports.TelegramService = TelegramService = __decorate([
+exports.TelegramService = TelegramService = TelegramService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(3, (0, typeorm_1.InjectRepository)(telegram_session_entity_1.TelegramSession)),
     __param(4, (0, typeorm_1.InjectRepository)(defect_entity_1.Defect)),

@@ -1,3 +1,4 @@
+import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { ClientService } from '../client/client.service';
@@ -5,7 +6,7 @@ import { DefectComplaint } from '../defect/defect-complaint.entity';
 import { Defect } from '../defect/defect.entity';
 import { UserService } from '../user/user.service';
 import { TelegramSession } from './telegram-session.entity';
-export declare class TelegramService {
+export declare class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly clientService;
     private readonly userService;
     private readonly configService;
@@ -13,9 +14,17 @@ export declare class TelegramService {
     private readonly defectRepository;
     private readonly complaintRepository;
     private readonly botToken;
+    private readonly logger;
+    private isPolling;
+    private pollingOffset;
     constructor(clientService: ClientService, userService: UserService, configService: ConfigService, sessionRepository: Repository<TelegramSession>, defectRepository: Repository<Defect>, complaintRepository: Repository<DefectComplaint>);
+    onModuleInit(): Promise<void>;
+    onModuleDestroy(): void;
     handleUpdate(update: any): Promise<void>;
     sendMessage(chatId: number | string, text: string, replyMarkup?: Record<string, unknown>): Promise<void>;
+    private initPollingOffset;
+    private runPollingLoop;
+    private fetchUpdates;
     private handleClientLink;
     private handleCallbackQuery;
     private showComplaintList;
@@ -25,4 +34,7 @@ export declare class TelegramService {
     private finishDiagnosis;
     private getOrCreateSession;
     private answerCallbackQuery;
+    private getRoleContext;
+    private sendRoleMenu;
+    private handleRoleSelection;
 }

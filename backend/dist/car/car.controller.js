@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const car_service_1 = require("./car.service");
 const create_car_dto_1 = require("./dto/create-car.dto");
 const find_cars_query_dto_1 = require("./dto/find-cars-query.dto");
+const update_car_dto_1 = require("./dto/update-car.dto");
 let CarController = class CarController {
     carService;
     constructor(carService) {
@@ -30,6 +31,12 @@ let CarController = class CarController {
     }
     findOne(id) {
         return this.carService.findOne(id);
+    }
+    update(id, updateCarDto) {
+        return this.carService.update(id, updateCarDto);
+    }
+    remove(id) {
+        return this.carService.remove(id);
     }
 };
 exports.CarController = CarController;
@@ -54,6 +61,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], CarController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_car_dto_1.UpdateCarDto]),
+    __metadata("design:returntype", Promise)
+], CarController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], CarController.prototype, "remove", null);
 exports.CarController = CarController = __decorate([
     (0, common_1.Controller)('cars'),
     __metadata("design:paramtypes", [car_service_1.CarService])

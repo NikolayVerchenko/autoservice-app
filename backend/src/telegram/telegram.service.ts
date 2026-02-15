@@ -72,17 +72,37 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const mechanic = await this.userService.findMechanicByTelegramUserId(String(fromId));
-    if (!mechanic) {
-      await this.sendMessage(chatId, 'Вы не зарегистрированы как механик');
+    const roleCtx = await this.getRoleContext(String(fromId));
+
+    if (text === '/start' || text === '/menu') {
+      await this.sendRoleMenu(chatId, roleCtx.isMechanic, roleCtx.isClient);
       return;
     }
 
-    const session = await this.getOrCreateSession(mechanic.id);
-    if (session.state === TelegramSessionState.ENTERING_DIAGNOSIS_TEXT && session.activeComplaintId) {
-      await this.handleDiagnosisTextInput(chatId, mechanic.id, session, text);
+    if (!roleCtx.isMechanic && !roleCtx.isClient) {
+      await this.sendMessage(chatId, 'Вы не зарегистрированы в системе');
       return;
     }
+
+    if (roleCtx.mechanic) {
+      const session = await this.getOrCreateSession(roleCtx.mechanic.id);
+      if (session.state === TelegramSessionState.ENTERING_DIAGNOSIS_TEXT && session.activeComplaintId) {
+        await this.handleDiagnosisTextInput(chatId, roleCtx.mechanic.id, session, text);
+        return;
+      }
+    }
+
+    if (roleCtx.isMechanic && roleCtx.isClient) {
+      await this.sendMessage(chatId, 'Выберите режим работы через /menu');
+      return;
+    }
+
+    if (roleCtx.isMechanic) {
+      await this.sendMessage(chatId, 'Режим механика активен. Используйте кнопки в карточке дефектовки.');
+      return;
+    }
+
+    await this.sendMessage(chatId, 'Режим клиента активен. Ожидайте сообщения по вашим документам.');
   }
 
   async sendMessage(
@@ -195,10 +215,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const mechanic = await this.userService.findMechanicByTelegramUserId(String(fromId));
+    const roleCtx = await this.getRoleContext(String(fromId));
+
+    if (data.startsWith('role:')) {
+      await this.answerCallbackQuery(callbackId);
+      await this.handleRoleSelection(chatId, data, roleCtx.isMechanic, roleCtx.isClient);
+      return;
+    }
+
+    const mechanic = roleCtx.mechanic;
     if (!mechanic) {
-      await this.answerCallbackQuery(callbackId, 'Вы не зарегистрированы как механик');
-      await this.sendMessage(chatId, 'Вы не зарегистрированы как механик');
+      await this.answerCallbackQuery(callbackId, 'Доступно только в режиме механика');
+      await this.sendMessage(chatId, 'Это действие доступно только механику.');
       return;
     }
 
@@ -377,5 +405,87 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ callback_query_id: callbackQueryId, ...(text ? { text } : {}) }),
     });
+  }
+
+  private async getRoleContext(telegramUserId: string): Promise<{
+    isMechanic: boolean;
+    isClient: boolean;
+    mechanic: Awaited<ReturnType<UserService['findMechanicByTelegramUserId']>>;
+  }> {
+    const mechanic = await this.userService.findMechanicByTelegramUserId(telegramUserId);
+    const client = await this.clientService.findOneByTelegramUserId(telegramUserId);
+
+    return {
+      isMechanic: Boolean(mechanic),
+      isClient: Boolean(client),
+      mechanic,
+    };
+  }
+
+  private async sendRoleMenu(
+    chatId: number | string,
+    isMechanic: boolean,
+    isClient: boolean,
+  ): Promise<void> {
+    if (!isMechanic && !isClient) {
+      await this.sendMessage(chatId, 'Вы не зарегистрированы в системе');
+      return;
+    }
+
+    if (isMechanic && isClient) {
+      await this.sendMessage(chatId, 'У вас доступны два режима:', {
+        inline_keyboard: [
+          [{ text: 'Режим механика', callback_data: 'role:mechanic' }],
+          [{ text: 'Режим клиента', callback_data: 'role:client' }],
+        ],
+      });
+      return;
+    }
+
+    if (isMechanic) {
+      await this.sendMessage(chatId, 'Доступен режим механика.', {
+        inline_keyboard: [[{ text: 'Открыть режим механика', callback_data: 'role:mechanic' }]],
+      });
+      return;
+    }
+
+    await this.sendMessage(chatId, 'Доступен режим клиента.', {
+      inline_keyboard: [[{ text: 'Открыть режим клиента', callback_data: 'role:client' }]],
+    });
+  }
+
+  private async handleRoleSelection(
+    chatId: number | string,
+    data: string,
+    isMechanic: boolean,
+    isClient: boolean,
+  ): Promise<void> {
+    if (data === 'role:mechanic') {
+      if (!isMechanic) {
+        await this.sendMessage(chatId, 'Роль механика для этого аккаунта недоступна.');
+        return;
+      }
+
+      await this.sendMessage(
+        chatId,
+        'Режим механика активен. Для работы используйте карточки дефектовок с кнопкой "Ответить в Telegram".',
+      );
+      return;
+    }
+
+    if (data === 'role:client') {
+      if (!isClient) {
+        await this.sendMessage(chatId, 'Роль клиента для этого аккаунта недоступна.');
+        return;
+      }
+
+      await this.sendMessage(
+        chatId,
+        'Режим клиента активен. Здесь вы будете получать сообщения от автосервиса.',
+      );
+      return;
+    }
+
+    await this.sendMessage(chatId, 'Неизвестный режим.');
   }
 }
