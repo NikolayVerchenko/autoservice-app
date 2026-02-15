@@ -27,16 +27,6 @@ services:
       TELEGRAM_MODE: "polling"
       TELEGRAM_POLL_INTERVAL_MS: "1500"
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: autoservice-frontend
-    depends_on:
-      - backend
-    expose:
-      - "80"
-
 volumes:
   postgres_data:
 
