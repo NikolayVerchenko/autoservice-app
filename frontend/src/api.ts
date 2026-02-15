@@ -1,5 +1,3 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
-
 type ApiError = {
   message?: string | string[];
   statusCode?: number;
@@ -91,7 +89,9 @@ type CreateAppointmentPayload = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  const response = await fetch(`/api${normalizedPath}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(init?.headers ?? {}),

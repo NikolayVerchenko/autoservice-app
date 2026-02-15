@@ -34,10 +34,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: autoservice-frontend
-    env_file:
-      - ./frontend/.env.docker
+    depends_on:
+      - backend
     ports:
-      - "5173:5173"
+      - "80:80"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
 volumes:
   postgres_data:
