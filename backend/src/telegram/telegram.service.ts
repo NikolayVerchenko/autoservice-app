@@ -34,6 +34,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     const mode = (this.configService.get<string>('TELEGRAM_MODE') ?? 'webhook').toLowerCase();
 
+    if (mode === 'off') {
+      this.logger.log('Telegram mode is off; bot startup skipped');
+      return;
+    }
+
     if (mode !== 'polling' || !this.botToken || this.botToken === 'PUT_YOUR_TOKEN_HERE') {
       return;
     }
